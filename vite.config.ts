@@ -2,7 +2,7 @@
 
 export default {
   plugins: [],
-  base: './',
+  base: '/member-app/',
 
   define: {
     'import.meta.env.VITE_API_URL': JSON.stringify(
