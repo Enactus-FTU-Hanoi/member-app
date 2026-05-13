@@ -1,6 +1,7 @@
+import { defineConfig } from 'vite'
 // import react from '@vitejs/plugin-react'
 
-export default {
+export default defineConfig({
   plugins: [],
   base: '/',  // Custom domain — no subfolder needed
   define: {
@@ -10,4 +11,4 @@ export default {
     outDir: 'dist',
     sourcemap: false,
   },
-} as const
+})
