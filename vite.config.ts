@@ -12,7 +12,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    assetsDir: 'assets',
+    minify: 'esbuild',
     rollupOptions: {
       output: {
         entryFileNames: 'assets/[name]-[hash].js',

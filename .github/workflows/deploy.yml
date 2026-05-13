@@ -1,4 +1,4 @@
-name: Deploy member-app → GitHub Pages
+name: Deploy member-app
 
 on:
   push:
@@ -15,9 +15,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -30,25 +29,21 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Build
-        run: npm run build
+      - run: npm run build
         env:
           VITE_API_URL: https://api.enactusftuhanoi.id.vn
 
-      - name: SPA fallback
-        run: cp dist/index.html dist/404.html
+      # SPA fallback — load đúng app khi F5 ở bất kỳ route nào
+      - run: cp dist/index.html dist/404.html
 
-      - name: Add CNAME
-        run: echo "member.enactusftuhanoi.id.vn" > dist/CNAME
+      # Custom domain
+      - run: echo "member.enactusftuhanoi.id.vn" > dist/CNAME
 
       - uses: actions/configure-pages@v4
-
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
-
       - id: deployment
         uses: actions/deploy-pages@v4
