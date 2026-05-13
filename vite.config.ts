@@ -13,5 +13,6 @@ export default {
   build: {
     outDir: 'dist',
     sourcemap: false,
+    crossOrigin: false,
   },
 }
