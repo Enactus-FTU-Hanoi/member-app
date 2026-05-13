@@ -13,6 +13,7 @@ export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Pro
   const res = await fetch(`${BASE}${path}`, {
     method: opts.method || 'GET',
     headers,
+    credentials: 'include',
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   })
 
@@ -23,6 +24,7 @@ export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Pro
       const r = await fetch(`${BASE}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ refreshToken }),
       })
       if (r.ok) {
@@ -33,6 +35,7 @@ export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Pro
         const retry = await fetch(`${BASE}${path}`, {
           method: opts.method || 'GET',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+          credentials: 'include',
           body: opts.body ? JSON.stringify(opts.body) : undefined,
         })
         if (!retry.ok) throw new Error((await retry.json() as any).error || 'Request failed')

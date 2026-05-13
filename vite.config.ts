@@ -1,18 +1,28 @@
-// import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-export default {
-  plugins: [],
+export default defineConfig({
+  plugins: [react()],
   base: '/',
-
-  define: {
-    'import.meta.env.VITE_API_URL': JSON.stringify(
-      'https://api.enactusftuhanoi.id.vn'
-    ),
+  server: {
+    fs: {
+      strict: false,
+    }
   },
-
   build: {
     outDir: 'dist',
     sourcemap: false,
-    crossOrigin: false,
+    target: 'es2020',
+    minify: 'terser',
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+        }
+      }
+    }
   },
-}
+})
