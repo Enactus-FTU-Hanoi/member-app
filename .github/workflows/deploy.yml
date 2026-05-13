@@ -38,16 +38,11 @@ jobs:
         env:
           VITE_API_URL: https://api.enactusftuhanoi.id.vn
 
-      - name: Add headers for MIME types
-        run: |
-          echo "/*" >> dist/_headers
-          echo "  X-Content-Type-Options: nosniff" >> dist/_headers
-          echo "" >> dist/_headers
-          echo "*.js" >> dist/_headers
-          echo "  Content-Type: text/javascript" >> dist/_headers
-
       - name: SPA fallback
         run: cp dist/index.html dist/404.html
+
+      - name: Add CNAME
+        run: echo "member.enactusftuhanoi.id.vn" > dist/CNAME
 
       - uses: actions/configure-pages@v4
 
