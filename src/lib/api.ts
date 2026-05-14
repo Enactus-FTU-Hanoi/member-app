@@ -36,6 +36,7 @@ export async function api<T = unknown>(path: string, opts: ApiOpts = {}): Promis
     }
     localStorage.clear()
     window.location.reload()
+    throw new Error('Session expired')
   }
 
   if (!res.ok) {
@@ -45,117 +46,51 @@ export async function api<T = unknown>(path: string, opts: ApiOpts = {}): Promis
   return res.json() as Promise<T>
 }
 
-// ─── TYPES ────────────────────────────────────────────────────────────────────
-
+// Types
 export type MemberStatus = 'ACTIVE' | 'INACTIVE' | 'ALUMNI' | 'FORMER_MEMBER' | 'SUSPENDED'
-export type MemberRole   = 'member' | 'admin' | 'super_admin'
+export type MemberRole = 'member' | 'admin' | 'super_admin'
 
 export type Member = {
-  id: string; name: string; email: string
-  role: MemberRole; status: MemberStatus
-  photo_url?: string; avatar_url?: string
-  department?: string; position?: string
-  generation?: string; dob?: string
-  phone?: string; student_id?: string
-  facebook_url?: string; linkedin_url?: string; bio?: string
-  joined_at: string; updated_at?: string
-  badges?: Badge[]
+  id: string
+  name: string
+  email: string
+  role: MemberRole
+  status: MemberStatus
+  photo_url?: string
+  department?: string
+  position?: string
+  generation?: string
+  dob?: string
+  phone?: string
+  student_id?: string
+  facebook_url?: string
+  linkedin_url?: string
+  bio?: string
+  joined_at: string
+  updated_at?: string
 }
 
 export type Task = {
-  id: string; title: string; description?: string
-  assigned_to: string; assignee_name?: string
-  created_by: string; due_date?: string
-  project?: string; priority: 'low'|'medium'|'high'|'urgent'
-  points: number; status: 'todo'|'in_progress'|'done'|'cancelled'
-  note?: string; created_at: string
-}
-
-export type Score = {
-  id: string; member_id: string; category: string
-  score: number; period: string; note?: string
-  graded_by?: string; created_at: string
-}
-
-export type Badge = {
-  id: string; name: string; description?: string
-  icon: string; color: string
-  awarded_at?: string; note?: string
-}
-
-export type Poll = {
-  id: string; title: string; description?: string
-  time_slots: string; deadline?: string; status: string
+  id: string
+  title: string
+  description?: string
+  assigned_to: string
+  assignee_name?: string
+  created_by: string
+  due_date?: string
+  project?: string
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  points: number
+  status: 'todo' | 'in_progress' | 'done' | 'cancelled'
+  note?: string
   created_at: string
 }
 
 export type Notification = {
-  id: string; title: string; body: string
-  type: string; read: number; created_at: string
-}
-
-export type CnbRecord = {
-  id: string; member_id: string; period: string
-  type: 'benefit'|'deduction'; amount: number
-  note?: string; created_at: string
-}
-
-export type Form = {
-  id: string; title: string; description?: string
-  fields: FormField[]; access: string
-  deadline?: string; status: string
-  created_by: string; creator_name?: string
-  response_count?: number; created_at: string
-  myResponse?: { answers: Record<string, any> } | null
-}
-
-export type FormField = {
-  id: string; type: 'text'|'textarea'|'select'|'radio'|'checkbox'|'date'|'number'
-  label: string; required?: boolean; options?: string[]
-  placeholder?: string
-}
-
-// Helpers
-export const statusLabel: Record<MemberStatus, string> = {
-  ACTIVE: 'Đang hoạt động', INACTIVE: 'Không hoạt động',
-  ALUMNI: 'Cựu thành viên', FORMER_MEMBER: 'Thành viên cũ',
-  SUSPENDED: 'Tạm đình chỉ',
-}
-
-export const roleLabel: Record<MemberRole, string> = {
-  member: 'Thành viên', admin: 'Admin', super_admin: 'Super Admin',
-}
-
-export const priorityColor: Record<string, string> = {
-  low: 'b-gray', medium: 'b-blue', high: 'b-amber', urgent: 'b-red',
-}
-
-export const taskStatusLabel: Record<string, string> = {
-  todo: 'Chưa làm', in_progress: 'Đang làm', done: 'Hoàn thành', cancelled: 'Đã huỷ',
-}
-
-export const taskStatusColor: Record<string, string> = {
-  todo: 'b-gray', in_progress: 'b-blue', done: 'b-green', cancelled: 'b-red',
-}
-
-export function initials(name: string) {
-  return name.split(' ').map(w => w[0]).slice(-2).join('').toUpperCase()
-}
-
-export function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric' })
-}
-
-export function fmtMoney(n: number) {
-  return n.toLocaleString('vi-VN') + ' đ'
-}
-
-export function timeAgo(d: string) {
-  const diff = Date.now() - new Date(d).getTime()
-  const m = Math.floor(diff / 60000)
-  if (m < 1)  return 'Vừa xong'
-  if (m < 60) return `${m} phút trước`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h} giờ trước`
-  return fmtDate(d)
+  id: string
+  title: string
+  body: string
+  type: string
+  read: number
+  created_at: string
 }

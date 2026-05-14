@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { GoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../App'
 import { api } from '../lib/api'
 
@@ -8,6 +9,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [useGoogle, setUseGoogle] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,120 +26,106 @@ export function LoginPage() {
     }
   }
 
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setLoading(true)
+    try {
+      const res = await api<{ accessToken: string; refreshToken: string; member: any }>('/auth/google', {
+        method: 'POST', body: { token: credentialResponse.credential },
+      })
+      login(res.accessToken, res.refreshToken, res.member)
+    } catch (err: any) {
+      setError('Đăng nhập Google thất bại')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <div style={{
-      display: 'flex', height: '100vh',
-      background: 'var(--bg)',
-    }}>
-      {/* Left panel */}
-      <div style={{
-        width: '45%', minWidth: 380,
-        background: 'var(--bg-sidebar)',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        padding: 48, position: 'relative', overflow: 'hidden',
-      }}>
-        {/* Decorative */}
-        <div style={{
-          position: 'absolute', top: -60, right: -60,
-          width: 240, height: 240, borderRadius: '50%',
-          background: 'rgba(232,25,44,0.12)', filter: 'blur(40px)',
-        }} />
-        <div style={{
-          position: 'absolute', bottom: -80, left: -40,
-          width: 200, height: 200, borderRadius: '50%',
-          background: 'rgba(232,25,44,0.07)', filter: 'blur(60px)',
-        }} />
-
-        <div style={{ position: 'relative', textAlign: 'center' }}>
-          <div style={{
-            width: 64, height: 64, borderRadius: 18,
-            background: 'var(--enactus-red)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 32, fontFamily: 'var(--font-display)', fontWeight: 800, color: '#fff',
-            margin: '0 auto 24px',
-            boxShadow: '0 8px 24px rgba(232,25,44,0.35)',
-          }}>E</div>
-
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: '#F2F0EC', marginBottom: 8 }}>
-            Enactus FTU Hanoi
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, lineHeight: 1.6, maxWidth: 280 }}>
-            Hệ thống quản lý nội bộ dành cho thành viên CLB
-          </p>
-
-          <div style={{ marginTop: 48, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {[
-              { icon: '◈', text: 'Theo dõi điểm KPI & task' },
-              { icon: '◷', text: 'Vote lịch họp, lịch rảnh' },
-              { icon: '◎', text: 'Xem C&B & thông báo nội bộ' },
-            ].map(item => (
-              <div key={item.text} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(232,25,44,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FCA5AD', fontSize: 14, flexShrink: 0 }}>
-                  {item.icon}
-                </div>
-                <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14 }}>{item.text}</span>
-              </div>
-            ))}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="max-w-md w-full mx-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-[#FFC107] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <span className="text-2xl font-bold text-gray-900">E</span>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900">Enactus FTU Hanoi</h1>
+            <p className="text-gray-500 mt-1">Hệ thống quản lý thành viên</p>
           </div>
-        </div>
-      </div>
 
-      {/* Right panel - form */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48 }}>
-        <div style={{ width: '100%', maxWidth: 380 }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, marginBottom: 8 }}>
-            Đăng nhập
-          </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 32 }}>
-            Dùng email CLB của bạn để truy cập
-          </p>
-
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6, fontFamily: 'var(--font-display)' }}>Email</label>
-              <input
-                className="input"
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="ten@enactusftuhanoi.id.vn"
-                required
-                autoComplete="email"
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6, fontFamily: 'var(--font-display)' }}>Mật khẩu</label>
-              <input
-                className="input"
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                autoComplete="current-password"
-              />
-            </div>
-
-            {error && (
-              <div style={{ background: 'var(--enactus-red-light)', border: '1px solid var(--enactus-red-muted)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: 14, color: 'var(--enactus-red-dark)' }}>
-                {error}
-              </div>
-            )}
-
+          {/* Toggle */}
+          <div className="flex gap-2 p-1 bg-gray-100 rounded-xl mb-6">
             <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={loading}
-              style={{ marginTop: 8, padding: '12px 18px', fontSize: 15, opacity: loading ? 0.7 : 1 }}
+              onClick={() => setUseGoogle(false)}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                !useGoogle ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+              }`}
             >
-              {loading ? <><div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> Đang đăng nhập...</> : 'Đăng nhập →'}
+              Email
             </button>
-          </form>
+            <button
+              onClick={() => setUseGoogle(true)}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                useGoogle ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+              }`}
+            >
+              Google
+            </button>
+          </div>
 
-          <p style={{ marginTop: 24, fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>
-            Chưa có tài khoản? Liên hệ Ban Tổ chức để được cấp.
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+              {error}
+            </div>
+          )}
+
+          {useGoogle ? (
+            <div className="flex justify-center py-4">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError('Đăng nhập thất bại')}
+                theme="outline"
+                size="large"
+                text="continue_with"
+                shape="pill"
+              />
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFC107] focus:border-transparent"
+                  placeholder="ten@enactusftuhanoi.id.vn"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FFC107] focus:border-transparent"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#FFC107] text-gray-900 font-medium py-2 rounded-xl hover:bg-[#FFD54F] transition-colors disabled:opacity-50"
+              >
+                {loading ? 'Đang đăng nhập...' : 'Đăng nhập →'}
+              </button>
+            </form>
+          )}
+
+          <p className="mt-6 text-center text-xs text-gray-400">
+            Chỉ thành viên Enactus FTU Hanoi mới được đăng nhập
           </p>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { TasksPage } from './pages/TasksPage'
@@ -7,17 +8,24 @@ import { SchedulePage } from './pages/SchedulePage'
 import { ProfilePage } from './pages/ProfilePage'
 import { CnbPage } from './pages/CnbPage'
 import { Layout } from './components/Layout'
-import { api } from './lib/api'
+import { api, Member } from './lib/api'
 
-type Member = { id: string; name: string; email: string; role: string; department?: string; avatar_url?: string }
-type AuthCtx = { member: Member | null; token: string | null; login: (token: string, refresh: string, member: Member) => void; logout: () => void; updateMember: (member: Member) => void }
+type AuthCtx = { 
+  member: Member | null; 
+  token: string | null; 
+  login: (token: string, refresh: string, member: Member) => void; 
+  logout: () => void; 
+  updateMember: (member: Member) => void 
+}
 
-export const AuthContext = createContext<AuthCtx>({ member: null, token: null, login: () => {}, logout: () => {}, updateMember: () => {} })
+export const AuthContext = createContext<AuthCtx>({ 
+  member: null, token: null, login: () => {}, logout: () => {}, updateMember: () => {} 
+})
 export const useAuth = () => useContext(AuthContext)
 
 type Page = 'dashboard' | 'tasks' | 'scores' | 'schedule' | 'cnb' | 'profile'
 
-export default function App() {
+function AppContent() {
   const [member, setMember] = useState<Member | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [page, setPage] = useState<Page>('dashboard')
@@ -65,8 +73,8 @@ export default function App() {
   }
 
   if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg)' }}>
-      <div className="spinner" />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFC107]" />
     </div>
   )
 
@@ -93,5 +101,14 @@ export default function App() {
         {pages[page]}
       </Layout>
     </AuthContext.Provider>
+  )
+}
+
+export default function App() {
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+  return (
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <AppContent />
+    </GoogleOAuthProvider>
   )
 }

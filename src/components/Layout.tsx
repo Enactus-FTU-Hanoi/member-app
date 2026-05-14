@@ -1,14 +1,24 @@
 import { useAuth } from '../App'
+import { 
+  LayoutDashboard, 
+  CheckSquare, 
+  Award, 
+  Calendar, 
+  DollarSign, 
+  User,
+  LogOut,
+  Bell
+} from 'lucide-react'
 
 type Page = 'dashboard' | 'tasks' | 'scores' | 'schedule' | 'cnb' | 'profile'
 
-const NAV_ITEMS: { id: Page; label: string; icon: string }[] = [
-  { id: 'dashboard', label: 'Dashboard',   icon: '⬡' },
-  { id: 'tasks',     label: 'Tasks',        icon: '✓' },
-  { id: 'scores',    label: 'Điểm KPI',     icon: '◈' },
-  { id: 'schedule',  label: 'Lịch họp',     icon: '◷' },
-  { id: 'cnb',       label: 'C&B',          icon: '◎' },
-  { id: 'profile',   label: 'Hồ sơ',        icon: '◉' },
+const NAV_ITEMS: { id: Page; label: string; icon: any }[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'tasks',     label: 'Tasks',     icon: CheckSquare },
+  { id: 'scores',    label: 'Điểm KPI',  icon: Award },
+  { id: 'schedule',  label: 'Lịch họp',  icon: Calendar },
+  { id: 'cnb',       label: 'C&B',       icon: DollarSign },
+  { id: 'profile',   label: 'Hồ sơ',     icon: User },
 ]
 
 type Props = { page: Page; onNavigate: (p: Page) => void; children: React.ReactNode }
@@ -16,102 +26,88 @@ type Props = { page: Page; onNavigate: (p: Page) => void; children: React.ReactN
 export function Layout({ page, onNavigate, children }: Props) {
   const { member, logout } = useAuth()
 
-  const initials = member?.name
-    .split(' ')
-    .map(w => w[0])
-    .slice(-2)
-    .join('')
-    .toUpperCase() || '?'
-
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside style={{
-        width: 'var(--sidebar-width)', background: 'var(--bg-sidebar)',
-        display: 'flex', flexDirection: 'column', flexShrink: 0,
-        borderRight: '1px solid rgba(255,255,255,0.06)', overflowY: 'auto',
-      }}>
-        {/* Logo */}
-        <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: 'var(--enactus-red)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 16, fontFamily: 'var(--font-display)', fontWeight: 700, color: '#fff',
-            }}>E</div>
+      <aside className="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200">
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="flex items-center gap-3 px-6 py-8 border-b border-gray-200">
+            <div className="w-10 h-10 bg-[#FFC107] rounded-xl flex items-center justify-center">
+              <span className="text-lg font-bold text-gray-900">E</span>
+            </div>
             <div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, color: '#F2F0EC' }}>Enactus FTU</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>Member Portal</div>
+              <h1 className="font-bold text-gray-900">Enactus FTU</h1>
+              <p className="text-xs text-gray-500">Hanoi</p>
             </div>
           </div>
-        </div>
 
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: '12px 12px' }}>
-          {NAV_ITEMS.map(item => (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-                padding: '9px 12px', border: 'none', borderRadius: 'var(--radius-md)',
-                background: page === item.id ? 'rgba(232,25,44,0.18)' : 'transparent',
-                color: page === item.id ? '#FCA5AD' : 'rgba(255,255,255,0.5)',
-                cursor: 'pointer', textAlign: 'left',
-                fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: page === item.id ? 600 : 400,
-                marginBottom: 2, transition: 'all 0.15s',
-              }}
-              onMouseEnter={e => { if (page !== item.id) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)' }}
-              onMouseLeave={e => { if (page !== item.id) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
-            >
-              <span style={{ fontSize: 16, opacity: page === item.id ? 1 : 0.7 }}>{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
-        </nav>
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-6 space-y-1">
+            {NAV_ITEMS.map((item) => {
+              const isActive = page === item.id
+              const Icon = item.icon
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onNavigate(item.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                    isActive
+                      ? 'bg-[#FFC107] bg-opacity-10 text-[#FFC107]'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              )
+            })}
+          </nav>
 
-        {/* User */}
-        <div style={{ padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <button
-            onClick={() => onNavigate('profile')}
-            style={{
-              width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-              padding: '8px 10px', border: 'none', borderRadius: 'var(--radius-md)',
-              background: 'rgba(255,255,255,0.04)', cursor: 'pointer',
-              textAlign: 'left', marginBottom: 8,
-            }}
-          >
-            {member?.photo_url ? (
-              <img src={member.photo_url} alt={member.name} style={{ width: 30, height: 30, borderRadius: 999, objectFit: 'cover' }} />
-            ) : (
-              <div className="avatar" style={{ width: 30, height: 30, fontSize: 11 }}>{initials}</div>
-            )}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 500, color: 'var(--text-on-dark)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {member?.name}
+          {/* User */}
+          <div className="p-4 border-t border-gray-200">
+            <div className="flex items-center gap-3 mb-4">
+              {member?.photo_url ? (
+                <img src={member.photo_url} alt={member.name} className="w-10 h-10 rounded-full object-cover" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                  <span className="text-sm font-medium text-gray-600">
+                    {member?.name?.split(' ').pop()?.[0] || '?'}
+                  </span>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">{member?.name}</p>
+                <p className="text-xs text-gray-500">{member?.department || member?.role}</p>
               </div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>{member?.department || member?.role}</div>
             </div>
-          </button>
-          <button
-            onClick={logout}
-            style={{
-              width: '100%', padding: '8px 12px', border: 'none', borderRadius: 'var(--radius-md)',
-              background: 'transparent', color: 'rgba(255,255,255,0.3)', cursor: 'pointer',
-              fontSize: 13, fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 8,
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.6)' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.3)' }}
-          >
-            <span>⟵</span> Đăng xuất
-          </button>
+            <button
+              onClick={logout}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              Đăng xuất
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* Main content */}
-      <main style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-        <div className="page-enter" style={{ flex: 1, padding: '28px 32px', maxWidth: 1100 }}>
+      {/* Main */}
+      <main className="ml-64">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+          <div className="flex items-center justify-between px-8 py-4">
+            <h2 className="text-xl font-semibold text-gray-900">
+              {NAV_ITEMS.find(n => n.id === page)?.label || 'Dashboard'}
+            </h2>
+            <button className="relative p-2 text-gray-400 hover:text-gray-600">
+              <Bell className="w-5 h-5" />
+            </button>
+          </div>
+        </header>
+
+        {/* Content */}
+        <div className="p-8">
           {children}
         </div>
       </main>

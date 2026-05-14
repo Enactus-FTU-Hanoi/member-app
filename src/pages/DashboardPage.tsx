@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../App'
-import { api } from '../lib/api'
+import { api, Task, Notification } from '../lib/api'
+import { 
+  Award, 
+  CheckCircle, 
+  TrendingUp,
+  Target,
+  Bell
+} from 'lucide-react'
 
-type Task = { id: string; title: string; status: string; due_date: string; project: string; priority: string; points: number }
-type Notification = { id: string; title: string; body: string; type: string; read: number; created_at: string }
 type Score = { category: string; score: number; period: string }
 
 export function DashboardPage() {
@@ -30,85 +35,111 @@ export function DashboardPage() {
   const pendingTasks = tasks.length
   const unread = notifs.filter(n => !n.read).length
 
-  const greet = () => {
-    const h = new Date().getHours()
-    if (h < 12) return 'Chào buổi sáng'
-    if (h < 18) return 'Chào buổi chiều'
-    return 'Chào buổi tối'
-  }
+  const stats = [
+    { label: 'Tổng điểm', value: totalScore.toFixed(0), icon: Award, color: '#FFC107', bg: '#FFC10710' },
+    { label: 'Task đang chờ', value: pendingTasks, icon: CheckCircle, color: '#22C55E', bg: '#22C55E10' },
+    { label: 'Thông báo mới', value: unread, icon: Bell, color: '#3B82F6', bg: '#3B82F610' },
+    { label: 'Thứ hạng', value: '#24', icon: TrendingUp, color: '#8B5CF6', bg: '#8B5CF610' },
+  ]
 
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}><div className="spinner" /></div>
+  if (loading) return (
+    <div className="flex justify-center py-12">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FFC107]" />
+    </div>
+  )
 
   return (
-    <div>
-      {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 26, marginBottom: 4 }}>{greet()}, {member?.name?.split(' ').pop()} 👋</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
-          {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        </p>
+    <div className="space-y-6">
+      {/* Welcome */}
+      <div className="bg-gradient-to-r from-[#FFC107] to-[#FFD54F] rounded-2xl p-6 text-gray-900">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Xin chào, {member?.name?.split(' ').pop()}!</h1>
+            <p className="mt-1 opacity-80">
+              {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
+          {member?.photo_url ? (
+            <img src={member.photo_url} alt={member.name} className="w-16 h-16 rounded-full border-4 border-white shadow-lg" />
+          ) : (
+            <div className="w-16 h-16 rounded-full border-4 border-white shadow-lg bg-white/30 flex items-center justify-center">
+              <span className="text-2xl font-bold">{member?.name?.[0]}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
-        {[
-          { label: 'Tổng điểm KPI', value: totalScore.toFixed(1), unit: 'pts', color: 'var(--enactus-red)', bg: 'var(--enactus-red-light)' },
-          { label: 'Task đang chờ', value: pendingTasks,           unit: 'task', color: '#B25C0A', bg: '#FEF3CD' },
-          { label: 'Thông báo mới', value: unread,                 unit: 'mới',  color: '#1A4FA0', bg: '#E6F0FD' },
-        ].map(stat => (
-          <div key={stat.label} className="card" style={{ padding: 20 }}>
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8, fontFamily: 'var(--font-display)' }}>{stat.label}</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <span style={{ fontSize: 32, fontFamily: 'var(--font-display)', fontWeight: 700, color: stat.color }}>{stat.value}</span>
-              <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{stat.unit}</span>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {stats.map((stat, idx) => (
+          <div key={idx} className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">{stat.label}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: stat.bg }}>
+                <stat.icon className="w-5 h-5" style={{ color: stat.color }} />
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-        {/* Recent Tasks */}
-        <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h3 style={{ fontSize: 15 }}>Tasks gần đây</h3>
-            <span className="badge badge-gray">{pendingTasks} pending</span>
+      {/* Tasks & Notifications */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Tasks */}
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-900">Task gần đây</h3>
+            <Target className="w-5 h-5 text-gray-400" />
           </div>
           {tasks.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: 14, textAlign: 'center', padding: '20px 0' }}>Không có task nào 🎉</p>
-          ) : tasks.map(task => (
-            <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-              <div style={{
-                width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                background: task.status === 'in_progress' ? '#22C55E' : task.status === 'done' ? 'var(--border-strong)' : '#F59E0B',
-              }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{task.title}</div>
-                {task.project && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{task.project}</div>}
-              </div>
-              <span className={`badge ${task.priority === 'urgent' ? 'badge-red' : task.priority === 'high' ? 'badge-amber' : 'badge-gray'}`} style={{ fontSize: 11 }}>
-                {task.priority}
-              </span>
+            <p className="text-gray-400 text-center py-8">Không có task nào 🎉</p>
+          ) : (
+            <div className="space-y-3">
+              {tasks.map(task => (
+                <div key={task.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 truncate">{task.title}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Hạn: {task.due_date ? new Date(task.due_date).toLocaleDateString('vi-VN') : 'Không có'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-[#FFC107]">{task.points}đ</span>
+                    <div className={`w-2 h-2 rounded-full ${
+                      task.status === 'done' ? 'bg-green-500' :
+                      task.status === 'in_progress' ? 'bg-blue-500' : 'bg-yellow-500'
+                    }`} />
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
 
         {/* Notifications */}
-        <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h3 style={{ fontSize: 15 }}>Thông báo</h3>
-            {unread > 0 && <span className="badge badge-red">{unread} mới</span>}
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-900">Thông báo</h3>
+            {unread > 0 && <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full">{unread} mới</span>}
           </div>
           {notifs.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: 14, textAlign: 'center', padding: '20px 0' }}>Chưa có thông báo</p>
-          ) : notifs.map(n => (
-            <div key={n.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                {!n.read && <div className="dot dot-red" style={{ width: 6, height: 6 }} />}
-                <span style={{ fontSize: 14, fontWeight: n.read ? 400 : 500 }}>{n.title}</span>
-              </div>
-              <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{n.body}</p>
+            <p className="text-gray-400 text-center py-8">Chưa có thông báo</p>
+          ) : (
+            <div className="space-y-3">
+              {notifs.map(notif => (
+                <div key={notif.id} className="p-3 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-2 mb-1">
+                    {!notif.read && <div className="w-2 h-2 bg-red-500 rounded-full" />}
+                    <p className="font-medium text-gray-900 text-sm">{notif.title}</p>
+                  </div>
+                  <p className="text-sm text-gray-500 line-clamp-2">{notif.body}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>
