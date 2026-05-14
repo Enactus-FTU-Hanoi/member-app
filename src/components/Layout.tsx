@@ -82,7 +82,11 @@ export function Layout({ page, onNavigate, children }: Props) {
               textAlign: 'left', marginBottom: 8,
             }}
           >
-            <div className="avatar" style={{ width: 30, height: 30, fontSize: 11 }}>{initials}</div>
+            {member?.photo_url ? (
+              <img src={member.photo_url} alt={member.name} style={{ width: 30, height: 30, borderRadius: 999, objectFit: 'cover' }} />
+            ) : (
+              <div className="avatar" style={{ width: 30, height: 30, fontSize: 11 }}>{initials}</div>
+            )}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 500, color: 'var(--text-on-dark)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {member?.name}

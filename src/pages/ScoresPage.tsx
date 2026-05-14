@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { authApi } from '../lib/api'
+import { api, Member } from '../lib/api'
 import { useAuth } from '../App'
 
 // ─── SCORES PAGE ─────────────────────────────────────────────────────────────
@@ -10,7 +10,7 @@ export function ScoresPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    authApi<Score[]>('/scores').then(setScores).finally(() => setLoading(false))
+    api<Score[]>('/scores').then(setScores).finally(() => setLoading(false))
   }, [])
 
   const total = scores.reduce((s, r) => s + r.score, 0)
@@ -67,7 +67,7 @@ export function SchedulePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    authApi<Poll[]>('/schedule/polls').then(setPolls).finally(() => setLoading(false))
+    api<Poll[]>('/schedule/polls').then(setPolls).finally(() => setLoading(false))
   }, [])
 
   const toggleSlot = (pollId: string, slot: string) => {
@@ -78,7 +78,7 @@ export function SchedulePage() {
   }
 
   const submitVote = async (pollId: string) => {
-    await authApi(`/schedule/polls/${pollId}/vote`, { method: 'POST', body: { available_slots: myVotes[pollId] || [] } })
+    await api(`/schedule/polls/${pollId}/vote`, { method: 'POST', body: { available_slots: myVotes[pollId] || [] } })
     alert('Đã lưu vote!')
   }
 
@@ -125,7 +125,7 @@ export function CnbPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    authApi<CnbRecord[]>('/cnb').then(setRecords).finally(() => setLoading(false))
+    api<CnbRecord[]>('/cnb').then(setRecords).finally(() => setLoading(false))
   }, [])
 
   const totalBenefits  = records.filter(r => r.type === 'benefit').reduce((s, r) => s + r.amount, 0)
@@ -165,19 +165,42 @@ export function CnbPage() {
 
 // ─── PROFILE PAGE ─────────────────────────────────────────────────────────────
 export function ProfilePage() {
-  const { member } = useAuth()
-  const [form, setForm] = useState({ name: member?.name || '', phone: '', avatar_url: '' })
+  const { member, updateMember } = useAuth()
+  const [form, setForm] = useState({ name: member?.name || '', phone: member?.phone || '', avatar_url: member?.photo_url || '' })
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!member) return
+      try {
+        const profile = await api<Member>(`/members/${member.id}`)
+        setForm({ name: profile.name, phone: profile.phone || '', avatar_url: profile.photo_url || '' })
+        updateMember(profile)
+      } catch (error) {
+        console.error(error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadProfile()
+  }, [member, updateMember])
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true)
     try {
-      await authApi(`/members/${member?.id}`, { method: 'PATCH', body: form })
+      const updated = await api<Member>(`/members/${member?.id}`, { method: 'PATCH', body: form })
+      updateMember(updated)
+      setForm({ name: updated.name, phone: updated.phone || '', avatar_url: updated.photo_url || '' })
       alert('Đã cập nhật!')
+    } catch (error) {
+      alert('Lưu hồ sơ thất bại')
     } finally { setSaving(false) }
   }
 
   const initials = member?.name?.split(' ').map(w => w[0]).slice(-2).join('').toUpperCase() || '?'
+
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}><div className="spinner" /></div>
 
   return (
     <div style={{ maxWidth: 560 }}>

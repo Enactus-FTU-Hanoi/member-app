@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../App'
-import { authApi } from '../lib/api'
+import { api } from '../lib/api'
 
 type Task = { id: string; title: string; status: string; due_date: string; project: string; priority: string; points: number }
 type Notification = { id: string; title: string; body: string; type: string; read: number; created_at: string }
@@ -15,18 +15,19 @@ export function DashboardPage() {
 
   useEffect(() => {
     Promise.all([
-      authApi<Task[]>('/tasks?status=todo&status=in_progress'),
-      authApi<Notification[]>('/notifications'),
-      authApi<Score[]>('/scores'),
+      api<Task[]>('/tasks'),
+      api<Notification[]>('/notifications'),
+      api<Score[]>('/scores'),
     ]).then(([t, n, s]) => {
-      setTasks(t.slice(0, 5))
+      const openTasks = t.filter(task => task.status !== 'done')
+      setTasks(openTasks.slice(0, 5))
       setNotifs(n.slice(0, 5))
       setScores(s)
     }).finally(() => setLoading(false))
   }, [])
 
   const totalScore = scores.reduce((sum, s) => sum + s.score, 0)
-  const pendingTasks = tasks.filter(t => t.status !== 'done').length
+  const pendingTasks = tasks.length
   const unread = notifs.filter(n => !n.read).length
 
   const greet = () => {
