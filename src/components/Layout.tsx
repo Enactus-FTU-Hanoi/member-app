@@ -3,21 +3,21 @@ import { useAuth } from '../App'
 type Page = 'dashboard' | 'tasks' | 'scores' | 'schedule' | 'cnb' | 'profile'
 
 const NAV: { id: Page; label: string; icon: string }[] = [
-  { id: 'dashboard', label: 'Dashboard',  icon: '⊞' },
-  { id: 'tasks',     label: 'Tasks',       icon: '✓' },
-  { id: 'scores',    label: 'Điểm KPI',    icon: '◈' },
-  { id: 'schedule',  label: 'Lịch họp',    icon: '◷' },
-  { id: 'cnb',       label: 'C&B',         icon: '◎' },
-  { id: 'profile',   label: 'Hồ sơ',       icon: '◉' },
+  { id: 'dashboard', label: 'Dashboard',   icon: '📊' },
+  { id: 'tasks',     label: 'Tasks',        icon: '✅' },
+  { id: 'scores',    label: 'Điểm KPI',    icon: '🏅' },
+  { id: 'schedule',  label: 'Lịch họp',    icon: '📅' },
+  { id: 'cnb',       label: 'C&B',         icon: '💰' },
+  { id: 'profile',   label: 'Hồ sơ',       icon: '👤' },
 ]
 
 const PAGE_META: Record<Page, { title: string; sub: string }> = {
-  dashboard: { title: 'Dashboard',          sub: 'Tổng quan hoạt động của bạn' },
-  tasks:     { title: 'Tasks của tôi',       sub: 'Quản lý và cập nhật tiến độ' },
-  scores:    { title: 'Điểm KPI',            sub: 'Lịch sử chấm điểm' },
-  schedule:  { title: 'Vote lịch họp',       sub: 'Chọn khung giờ phù hợp' },
-  cnb:       { title: 'C&B',                 sub: 'Phúc lợi & khấu trừ' },
-  profile:   { title: 'Hồ sơ cá nhân',       sub: 'Thông tin & cài đặt' },
+  dashboard: { title: 'Dashboard',        sub: 'Tổng quan hoạt động của bạn' },
+  tasks:     { title: 'Tasks của tôi',    sub: 'Quản lý và cập nhật tiến độ' },
+  scores:    { title: 'Điểm KPI',         sub: 'Lịch sử chấm điểm' },
+  schedule:  { title: 'Vote lịch họp',    sub: 'Chọn khung giờ phù hợp' },
+  cnb:       { title: 'C&B',              sub: 'Phúc lợi & khấu trừ' },
+  profile:   { title: 'Hồ sơ cá nhân',   sub: 'Thông tin & cài đặt' },
 }
 
 type Props = { page: Page; onNavigate: (p: Page) => void; children: React.ReactNode }
@@ -32,10 +32,9 @@ export function Layout({ page, onNavigate, children }: Props) {
 
   return (
     <div className="shell">
-      {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-logo">
-          <div className="logo-mark">E</div>
+          <div className="logo-img">E</div>
           <div>
             <div className="logo-name">Enactus FTU</div>
             <div className="logo-sub">Member Portal</div>
@@ -43,7 +42,7 @@ export function Layout({ page, onNavigate, children }: Props) {
         </div>
 
         <nav className="sidebar-nav">
-          <div className="nav-section">Menu</div>
+          <div className="nav-section">Menu chính</div>
           {NAV.map(item => (
             <button
               key={item.id}
@@ -61,16 +60,16 @@ export function Layout({ page, onNavigate, children }: Props) {
             <div className="av av-sm">{member ? initials(member.name) : '?'}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="user-chip-name">{member?.name}</div>
-              <div className="user-chip-role">{member?.department || member?.role}</div>
+              <div className="user-chip-role">{(member as any)?.department || member?.role}</div>
             </div>
+            <span style={{ fontSize: 11, color: 'var(--text-4)' }}>→</span>
           </button>
           <button className="logout-btn" onClick={logout}>
-            <span>⟵</span> Đăng xuất
+            <span>🚪</span> Đăng xuất
           </button>
         </div>
       </aside>
 
-      {/* Main */}
       <div className="main">
         <header className="topbar">
           <div>
@@ -78,20 +77,22 @@ export function Layout({ page, onNavigate, children }: Props) {
             <div className="topbar-sub">{meta.sub}</div>
           </div>
           <div className="topbar-right">
-            <button className="icon-btn">
+            <button className="icon-btn" title="Thông báo">
               🔔
               <span className="notif-dot" />
             </button>
-            <div className="av av-md" style={{ cursor: 'pointer' }} onClick={() => onNavigate('profile')}>
+            <div
+              className="av av-md"
+              style={{ cursor: 'pointer' }}
+              onClick={() => onNavigate('profile')}
+            >
               {member ? initials(member.name) : '?'}
             </div>
           </div>
         </header>
 
         <div className="page">
-          <div className="page-enter">
-            {children}
-          </div>
+          <div className="page-enter">{children}</div>
         </div>
       </div>
     </div>
