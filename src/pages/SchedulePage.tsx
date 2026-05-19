@@ -8,27 +8,27 @@ export function SchedulePage() {
   const [voting, setVoting] = useState<string | null>(null)
   const [results, setResults] = useState<Record<string, any>>({})
 
-  useEffect(() => {
-    Promise.all([
-      api<any>('/schedule/polls/all'),
-      api<Record<string, string>>('/schedule/my-votes')
-    ]).then(([pollsData, votesData]) => {
-      // Xử lý dữ liệu polls an toàn
-      let pollsList: any[] = []
-      if (Array.isArray(pollsData)) {
-        pollsList = pollsData
-      } else if (pollsData && typeof pollsData === 'object' && Array.isArray(pollsData.polls)) {
-        pollsList = pollsData.polls
-      } else if (pollsData && typeof pollsData === 'object' && pollsData.results) {
-        pollsList = pollsData.results
-      }
-      setPolls(pollsList)
-      setMyVotes(votesData || {})
-    }).catch((err) => {
-      console.error(err)
-      setPolls([])
-    }).finally(() => setLoading(false))
-  }, [])
+useEffect(() => {
+  Promise.all([
+    api<any>('/schedule/polls/all'),
+    api<Record<string, string>>('/schedule/my-votes')
+  ]).then(([pollsData, votesData]) => {
+    let pollsList: any[] = []
+    // Xử lý pollsData
+    if (Array.isArray(pollsData)) {
+      pollsList = pollsData
+    } else if (pollsData && typeof pollsData === 'object' && Array.isArray(pollsData.polls)) {
+      pollsList = pollsData.polls
+    } else if (pollsData && typeof pollsData === 'object' && pollsData.results) {
+      pollsList = pollsData.results
+    }
+    setPolls(pollsList)
+    setMyVotes(votesData || {})
+  }).catch((err) => {
+    console.error(err)
+    setPolls([])
+  }).finally(() => setLoading(false))
+}, [])
 
   const vote = async (pollId: string, slot: string) => {
     setVoting(pollId)
