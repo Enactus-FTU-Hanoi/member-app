@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { authApi } from '../lib/api'
+import { api } from '../lib/api'
 import { useAuth } from '../App'
 
 // ─── SCORES PAGE ─────────────────────────────────────────────────────────────
@@ -10,7 +10,7 @@ export function ScoresPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    authApi<Score[]>('/scores').then(setScores).finally(() => setLoading(false))
+    api<Score[]>('/scores').then(setScores).finally(() => setLoading(false))
   }, [])
 
   const total = scores.reduce((s, r) => s + r.score, 0)
@@ -67,7 +67,7 @@ export function SchedulePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    authApi<Poll[]>('/schedule/polls').then(setPolls).finally(() => setLoading(false))
+    api<Poll[]>('/schedule/polls').then(setPolls).finally(() => setLoading(false))
   }, [])
 
   const toggleSlot = (pollId: string, slot: string) => {
@@ -78,7 +78,7 @@ export function SchedulePage() {
   }
 
   const submitVote = async (pollId: string) => {
-    await authApi(`/schedule/polls/${pollId}/vote`, { method: 'POST', body: { available_slots: myVotes[pollId] || [] } })
+    await api(`/schedule/polls/${pollId}/vote`, { method: 'POST', body: { available_slots: myVotes[pollId] || [] } })
     alert('Đã lưu vote!')
   }
 
@@ -125,7 +125,7 @@ export function CnbPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    authApi<CnbRecord[]>('/cnb').then(setRecords).finally(() => setLoading(false))
+    api<CnbRecord[]>('/cnb').then(setRecords).finally(() => setLoading(false))
   }, [])
 
   const totalBenefits  = records.filter(r => r.type === 'benefit').reduce((s, r) => s + r.amount, 0)
@@ -172,7 +172,7 @@ export function ProfilePage() {
   const save = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true)
     try {
-      await authApi(`/members/${member?.id}`, { method: 'PATCH', body: form })
+      await api(`/members/${member?.id}`, { method: 'PATCH', body: form })
       alert('Đã cập nhật!')
     } finally { setSaving(false) }
   }
