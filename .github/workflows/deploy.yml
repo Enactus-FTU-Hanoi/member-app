@@ -41,7 +41,7 @@ jobs:
       # Custom domain
       - run: echo "member.enactusftuhanoi.id.vn" > dist/CNAME
 
-      - uses: actions/configure-pages@v4
+      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
