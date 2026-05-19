@@ -10,12 +10,24 @@ export function SchedulePage() {
 
   useEffect(() => {
     Promise.all([
-      api<any[]>('/schedule/polls/all'),
+      api<any>('/schedule/polls/all'),
       api<Record<string, string>>('/schedule/my-votes')
     ]).then(([pollsData, votesData]) => {
-      setPolls(Array.isArray(pollsData) ? pollsData : [])
+      // Xử lý dữ liệu polls an toàn
+      let pollsList: any[] = []
+      if (Array.isArray(pollsData)) {
+        pollsList = pollsData
+      } else if (pollsData && typeof pollsData === 'object' && Array.isArray(pollsData.polls)) {
+        pollsList = pollsData.polls
+      } else if (pollsData && typeof pollsData === 'object' && pollsData.results) {
+        pollsList = pollsData.results
+      }
+      setPolls(pollsList)
       setMyVotes(votesData || {})
-    }).catch(console.error).finally(() => setLoading(false))
+    }).catch((err) => {
+      console.error(err)
+      setPolls([])
+    }).finally(() => setLoading(false))
   }, [])
 
   const vote = async (pollId: string, slot: string) => {
@@ -25,7 +37,7 @@ export function SchedulePage() {
       setMyVotes(v => ({ ...v, [pollId]: slot }))
       // Refresh results
       const res = await api<any[]>(`/schedule/polls/${pollId}/results`)
-      setResults(r => ({ ...r, [pollId]: res }))
+      setResults(r => ({ ...r, [pollId]: Array.isArray(res) ? res : [] }))
     } catch (e: any) {
       alert(e.message)
     } finally {
@@ -37,7 +49,7 @@ export function SchedulePage() {
     if (results[pollId]) return
     try {
       const res = await api<any[]>(`/schedule/polls/${pollId}/results`)
-      setResults(r => ({ ...r, [pollId]: res }))
+      setResults(r => ({ ...r, [pollId]: Array.isArray(res) ? res : [] }))
     } catch (e) { console.error(e) }
   }
 
@@ -50,7 +62,15 @@ export function SchedulePage() {
         <div className="empty"><span style={{ fontSize: 48 }}>📅</span><span>Chưa có poll nào</span></div>
       ) : (
         polls.map(poll => {
-          const slots: string[] = (() => { try { return JSON.parse(poll.time_slots || '[]') } catch { return [] } })()
+          let slots: string[] = []
+          try {
+            if (typeof poll.time_slots === 'string') {
+              slots = JSON.parse(poll.time_slots || '[]')
+            } else if (Array.isArray(poll.time_slots)) {
+              slots = poll.time_slots
+            }
+          } catch { slots = [] }
+          
           const myVote = myVotes[poll.id]
           const showResults = results[poll.id]
           const isExpired = poll.deadline && new Date(poll.deadline) < new Date()
@@ -96,17 +116,20 @@ export function SchedulePage() {
                 </button>
               )}
 
-              {showResults && (
+              {showResults && showResults.length > 0 && (
                 <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
                   <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>📊 Kết quả bình chọn</div>
-                  {showResults.map((r: any) => (
-                    <div key={r.slot} style={{ marginBottom: 8 }}>
+                  {showResults.map((r: any, idx: number) => (
+                    <div key={r.slot || idx} style={{ marginBottom: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
                         <span>{r.slot}</span>
                         <span className="badge b-green">{r.count} phiếu</span>
                       </div>
                       <div className="progress-track">
-                        <div className="progress-fill" style={{ width: `${showResults[0]?.count > 0 ? (r.count / showResults[0].count) * 100 : 0}%` }} />
+                        <div className="progress-fill" style={{ 
+                          width: `${showResults[0]?.count > 0 ? (r.count / showResults[0].count) * 100 : 0}%`,
+                          background: 'var(--amber)'
+                        }} />
                       </div>
                     </div>
                   ))}
