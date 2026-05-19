@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { authApi } from '../lib/api'
+import { api } from '../lib/api'
 
 type Task = { id: string; title: string; status: string; due_date: string; project: string; priority: string; points: number; note?: string }
 
@@ -16,13 +16,13 @@ export function TasksPage() {
   const [filter, setFilter] = useState<string>('all')
 
   useEffect(() => {
-    authApi<Task[]>('/tasks').then(setTasks).finally(() => setLoading(false))
+    api<Task[]>('/tasks').then(setTasks).finally(() => setLoading(false))
   }, [])
 
   const filtered = filter === 'all' ? tasks : tasks.filter(t => t.status === filter)
 
   const updateStatus = async (id: string, status: string) => {
-    await authApi(`/tasks/${id}`, { method: 'PATCH', body: { status } })
+    await api(`/tasks/${id}`, { method: 'PATCH', body: { status } })
     setTasks(ts => ts.map(t => t.id === id ? { ...t, status } : t))
   }
 
