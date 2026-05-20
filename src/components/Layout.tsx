@@ -1,14 +1,15 @@
 import { useAuth } from '../App'
+import { Icon, IconName } from './Icon'
 
 type Page = 'dashboard' | 'tasks' | 'scores' | 'schedule' | 'cnb' | 'profile'
 
-const NAV: { id: Page; label: string; icon: string }[] = [
-  { id: 'dashboard', label: 'Dashboard',   icon: '📊' },
-  { id: 'tasks',     label: 'Tasks',        icon: '✅' },
-  { id: 'scores',    label: 'Điểm KPI',    icon: '🏅' },
-  { id: 'schedule',  label: 'Lịch họp',    icon: '📅' },
-  { id: 'cnb',       label: 'C&B',         icon: '💰' },
-  { id: 'profile',   label: 'Hồ sơ',       icon: '👤' },
+const NAV: { id: Page; label: string; icon: IconName }[] = [
+  { id: 'dashboard', label: 'Dashboard',   icon: 'LayoutDashboard' },
+  { id: 'tasks',     label: 'Tasks',       icon: 'CheckSquare' },
+  { id: 'scores',    label: 'Điểm KPI',    icon: 'Award' },
+  { id: 'schedule',  label: 'Lịch họp',    icon: 'Calendar' },
+  { id: 'cnb',       label: 'C&B',         icon: 'Wallet' },
+  { id: 'profile',   label: 'Hồ sơ',       icon: 'User' },
 ]
 
 const PAGE_META: Record<Page, { title: string; sub: string }> = {
@@ -34,9 +35,11 @@ export function Layout({ page, onNavigate, children }: Props) {
     <div className="shell">
       <aside className="sidebar">
         <div className="sidebar-logo">
-          <div className="logo-img">E</div>
+          <div className="logo-icon">
+            <Icon name="Sparkles" size={18} color="#FFFFFF" />
+          </div>
           <div>
-            <div className="logo-name">Enactus FTU</div>
+            <div className="logo-text">Enactus FTU</div>
             <div className="logo-sub">Member Portal</div>
           </div>
         </div>
@@ -49,7 +52,7 @@ export function Layout({ page, onNavigate, children }: Props) {
               className={`nav-item${page === item.id ? ' active' : ''}`}
               onClick={() => onNavigate(item.id)}
             >
-              <span className="nav-icon">{item.icon}</span>
+              <Icon name={item.icon} size={18} className="nav-icon" />
               {item.label}
             </button>
           ))}
@@ -57,15 +60,16 @@ export function Layout({ page, onNavigate, children }: Props) {
 
         <div className="sidebar-footer">
           <button className="user-chip" onClick={() => onNavigate('profile')}>
-            <div className="av av-sm">{member ? initials(member.name) : '?'}</div>
+            <div className="avatar avatar-sm">{member ? initials(member.name) : '?'}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="user-chip-name">{member?.name}</div>
               <div className="user-chip-role">{(member as any)?.department || member?.role}</div>
             </div>
-            <span style={{ fontSize: 11, color: 'var(--text-4)' }}>→</span>
+            <Icon name="ChevronRight" size={14} color="var(--text-tertiary)" />
           </button>
           <button className="logout-btn" onClick={logout}>
-            <span>🚪</span> Đăng xuất
+            <Icon name="LogOut" size={16} />
+            Đăng xuất
           </button>
         </div>
       </aside>
@@ -78,11 +82,11 @@ export function Layout({ page, onNavigate, children }: Props) {
           </div>
           <div className="topbar-right">
             <button className="icon-btn" title="Thông báo">
-              🔔
+              <Icon name="Bell" size={18} />
               <span className="notif-dot" />
             </button>
             <div
-              className="av av-md"
+              className="avatar avatar-md"
               style={{ cursor: 'pointer' }}
               onClick={() => onNavigate('profile')}
             >
