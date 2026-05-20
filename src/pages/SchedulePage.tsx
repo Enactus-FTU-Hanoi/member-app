@@ -1,43 +1,68 @@
 import { useState, useEffect } from 'react'
 import { api } from '../lib/api'
+import { Icon } from '../components/Icon'
+
+type Poll = {
+  id: string
+  title: string
+  description?: string
+  time_slots: string[] | string
+  type?: 'list' | 'range'
+  status: string
+  deadline?: string
+}
+
+type TimeSlot = { label: string; date: string; time: string }
 
 export function SchedulePage() {
-  const [polls, setPolls] = useState<any[]>([])
-  const [myVotes, setMyVotes] = useState<Record<string, string>>({})
+  const [polls, setPolls] = useState<Poll[]>([])
+  const [myVotes, setMyVotes] = useState<Record<string, string[]>>({})
   const [loading, setLoading] = useState(true)
   const [voting, setVoting] = useState<string | null>(null)
-  const [results, setResults] = useState<Record<string, any>>({})
 
-useEffect(() => {
-  Promise.all([
-    api<any>('/schedule/polls/all'),
-    api<Record<string, string>>('/schedule/my-votes')
-  ]).then(([pollsData, votesData]) => {
-    let pollsList: any[] = []
-    // Xử lý pollsData
-    if (Array.isArray(pollsData)) {
-      pollsList = pollsData
-    } else if (pollsData && typeof pollsData === 'object' && Array.isArray(pollsData.polls)) {
-      pollsList = pollsData.polls
-    } else if (pollsData && typeof pollsData === 'object' && pollsData.results) {
-      pollsList = pollsData.results
-    }
-    setPolls(pollsList)
-    setMyVotes(votesData || {})
-  }).catch((err) => {
-    console.error(err)
-    setPolls([])
-  }).finally(() => setLoading(false))
-}, [])
+  useEffect(() => {
+    Promise.all([
+      api<any>('/schedule/polls/all'),
+      api<Record<string, string[]>>('/schedule/my-votes')
+    ]).then(([pollsData, votesData]) => {
+      let pollsList: Poll[] = []
+      if (Array.isArray(pollsData)) {
+        pollsList = pollsData
+      } else if (pollsData?.polls) {
+        pollsList = pollsData.polls
+      }
+      
+      // Parse time_slots nếu cần
+      pollsList = pollsList.map(poll => ({
+        ...poll,
+        time_slots: typeof poll.time_slots === 'string' 
+          ? JSON.parse(poll.time_slots) 
+          : poll.time_slots
+      }))
+      
+      setPolls(pollsList)
+      setMyVotes(votesData || {})
+    }).catch(console.error).finally(() => setLoading(false))
+  }, [])
 
-  const vote = async (pollId: string, slot: string) => {
-    setVoting(pollId)
+  const toggleSlot = (pollId: string, slot: string) => {
+    setMyVotes(prev => {
+      const current = prev[pollId] || []
+      const updated = current.includes(slot)
+        ? current.filter(s => s !== slot)
+        : [...current, slot]
+      return { ...prev, [pollId]: updated }
+    })
+  }
+
+  const submitVote = async (poll: Poll) => {
+    setVoting(poll.id)
     try {
-      await api('/schedule/vote', { method: 'POST', body: { poll_id: pollId, slot } })
-      setMyVotes(v => ({ ...v, [pollId]: slot }))
-      // Refresh results
-      const res = await api<any[]>(`/schedule/polls/${pollId}/results`)
-      setResults(r => ({ ...r, [pollId]: Array.isArray(res) ? res : [] }))
+      await api('/schedule/vote', {
+        method: 'POST',
+        body: { poll_id: poll.id, available_slots: myVotes[poll.id] || [] }
+      })
+      alert('Đã lưu vote thành công!')
     } catch (e: any) {
       alert(e.message)
     } finally {
@@ -45,12 +70,24 @@ useEffect(() => {
     }
   }
 
-  const viewResults = async (pollId: string) => {
-    if (results[pollId]) return
+  const parseTimeSlots = (timeSlots: string[]): TimeSlot[] => {
     try {
-      const res = await api<any[]>(`/schedule/polls/${pollId}/results`)
-      setResults(r => ({ ...r, [pollId]: Array.isArray(res) ? res : [] }))
-    } catch (e) { console.error(e) }
+      return timeSlots.map((slot: string) => {
+        const [date, time] = slot.split(' ')
+        return { label: slot, date, time }
+      })
+    } catch {
+      return []
+    }
+  }
+
+  const groupByDate = (slots: TimeSlot[]) => {
+    const grouped: Record<string, TimeSlot[]> = {}
+    slots.forEach(slot => {
+      if (!grouped[slot.date]) grouped[slot.date] = []
+      grouped[slot.date].push(slot)
+    })
+    return grouped
   }
 
   if (loading) return <div className="loading-center"><div className="spinner" /></div>
@@ -58,87 +95,148 @@ useEffect(() => {
   return (
     <div>
       <h2 className="page-title">Lịch họp & Sự kiện</h2>
+      
       {polls.length === 0 ? (
-        <div className="empty"><span style={{ fontSize: 48 }}>📅</span><span>Chưa có poll nào</span></div>
+        <div className="empty"><Icon name="Calendar" size={48} /><span>Chưa có poll nào</span></div>
       ) : (
         polls.map(poll => {
-          let slots: string[] = []
-          try {
-            if (typeof poll.time_slots === 'string') {
-              slots = JSON.parse(poll.time_slots || '[]')
-            } else if (Array.isArray(poll.time_slots)) {
-              slots = poll.time_slots
-            }
-          } catch { slots = [] }
-          
-          const myVote = myVotes[poll.id]
-          const showResults = results[poll.id]
+          const slotsArray = Array.isArray(poll.time_slots) ? poll.time_slots : []
+          const slots = parseTimeSlots(slotsArray)
+          const grouped = groupByDate(slots)
+          const selectedSlots = myVotes[poll.id] || []
           const isExpired = poll.deadline && new Date(poll.deadline) < new Date()
+          const isOpen = poll.status === 'open' && !isExpired
 
           return (
-            <div key={poll.id} className="card" style={{ marginBottom: 20 }}>
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <div key={poll.id} className="card" style={{ marginBottom: 24 }}>
+              <div className="card-head">
+                <div>
                   <h3 style={{ fontSize: 16, fontWeight: 700 }}>{poll.title}</h3>
-                  <span className={`badge ${poll.status === 'open' && !isExpired ? 'b-green' : 'b-gray'}`}>
-                    {poll.status === 'open' && !isExpired ? '● Đang mở' : 'Đã đóng'}
-                  </span>
+                  {poll.description && <p style={{ color: 'var(--text-3)', fontSize: 13, marginTop: 4 }}>{poll.description}</p>}
                 </div>
-                {poll.description && <p style={{ fontSize: 13, color: 'var(--text-3)' }}>{poll.description}</p>}
+                <span className={`badge ${isOpen ? 'badge-gold' : 'badge-gray'}`}>
+                  {isOpen ? '● Đang mở' : 'Đã đóng'}
+                </span>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {slots.map(slot => {
-                  const isVoted = myVote === slot
-                  const disabled = poll.status !== 'open' || isExpired || !!myVote
-                  return (
-                    <button
-                      key={slot}
-                      className={`btn ${isVoted ? 'btn-primary' : 'btn-outline'}`}
-                      onClick={() => vote(poll.id, slot)}
-                      disabled={disabled || voting === poll.id}
-                      style={{ justifyContent: 'space-between', width: '100%' }}
-                    >
-                      <span>{slot}</span>
-                      {isVoted && <span style={{ fontSize: 12 }}>✓ Đã chọn</span>}
-                    </button>
-                  )
-                })}
+              {/* Grid Calendar */}
+              <div className="schedule-grid">
+                <table className="grid-table">
+                  <thead>
+                    <tr>
+                      <th className="time-header">Giờ</th>
+                      {Object.keys(grouped).map(date => (
+                        <th key={date} className="date-header">{date}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from(new Set(slots.map(s => s.time))).sort().map(time => (
+                      <tr key={time}>
+                        <td className="time-cell">{time}</td>
+                        {Object.entries(grouped).map(([date, daySlots]) => {
+                          const slot = daySlots.find(s => s.time === time)
+                          const isSelected = slot && selectedSlots.includes(slot.label)
+                          const isAvailable = slot && isOpen
+                          
+                          return (
+                            <td
+                              key={date}
+                              className={`slot-cell ${isSelected ? 'selected' : ''} ${!isAvailable ? 'disabled' : ''}`}
+                              onClick={() => isAvailable && slot && toggleSlot(poll.id, slot.label)}
+                            >
+                              {isSelected && <Icon name="Check" size={16} />}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
 
-              {myVote && !showResults && (
-                <button
-                  className="btn btn-outline btn-sm"
-                  onClick={() => viewResults(poll.id)}
-                  style={{ marginTop: 12, width: '100%' }}
-                >
-                  Xem kết quả
-                </button>
+              {isOpen && (
+                <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => submitVote(poll)}
+                    disabled={voting === poll.id}
+                  >
+                    {voting === poll.id ? <Icon name="Loader2" size={16} className="spin" /> : <Icon name="Save" size={16} />}
+                    Lưu vote ({selectedSlots.length} slot)
+                  </button>
+                </div>
               )}
 
-              {showResults && showResults.length > 0 && (
-                <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-                  <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>📊 Kết quả bình chọn</div>
-                  {showResults.map((r: any, idx: number) => (
-                    <div key={r.slot || idx} style={{ marginBottom: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
-                        <span>{r.slot}</span>
-                        <span className="badge b-green">{r.count} phiếu</span>
-                      </div>
-                      <div className="progress-track">
-                        <div className="progress-fill" style={{ 
-                          width: `${showResults[0]?.count > 0 ? (r.count / showResults[0].count) * 100 : 0}%`,
-                          background: 'var(--amber)'
-                        }} />
-                      </div>
-                    </div>
-                  ))}
+              {!isOpen && selectedSlots.length > 0 && (
+                <div style={{ marginTop: 16, padding: 12, background: '#F0FDF4', borderRadius: 12 }}>
+                  <p style={{ fontSize: 13, color: '#166534' }}>
+                    ✅ Bạn đã chọn {selectedSlots.length} khung giờ
+                  </p>
                 </div>
               )}
             </div>
           )
         })
       )}
+
+      <style>{`
+        .schedule-grid {
+          overflow-x: auto;
+          margin-top: 16px;
+        }
+        .grid-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 12px;
+        }
+        .grid-table th,
+        .grid-table td {
+          border: 1px solid #E5E7EB;
+          padding: 8px 12px;
+          text-align: center;
+        }
+        .time-header {
+          background: #F9FAFB;
+          font-weight: 600;
+          color: #6B7280;
+          min-width: 70px;
+        }
+        .date-header {
+          background: #FFF8E1;
+          font-weight: 600;
+          color: #B45309;
+        }
+        .time-cell {
+          background: #F9FAFB;
+          font-weight: 500;
+          color: #4B5563;
+        }
+        .slot-cell {
+          cursor: pointer;
+          transition: all 0.2s;
+          background: #FFFFFF;
+        }
+        .slot-cell:hover {
+          background: #FEF3C7;
+        }
+        .slot-cell.selected {
+          background: #FFC107;
+          color: white;
+        }
+        .slot-cell.disabled {
+          background: #F3F4F6;
+          cursor: not-allowed;
+          opacity: 0.5;
+        }
+        .spin {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   )
 }
