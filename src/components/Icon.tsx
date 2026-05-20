@@ -13,6 +13,8 @@ import {
   Medal,
   FormInput,
   Settings,
+  Loader2,
+  AlertCircle,  // ✅ THÊM
   type LucideIcon
 } from 'lucide-react'
 
@@ -31,6 +33,8 @@ export type IconName =
   | 'Medal'
   | 'FormInput'
   | 'Settings'
+  | 'Loader2'      // ✅ THÊM
+  | 'AlertCircle'  // ✅ THÊM
 
 const iconMap: Record<IconName, LucideIcon> = {
   LayoutDashboard,
@@ -47,6 +51,8 @@ const iconMap: Record<IconName, LucideIcon> = {
   Medal,
   FormInput,
   Settings,
+  Loader2,        // ✅ THÊM
+  AlertCircle,    // ✅ THÊM
 }
 
 interface IconProps {
